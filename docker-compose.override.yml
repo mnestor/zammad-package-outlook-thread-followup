@@ -1,0 +1,24 @@
+# Mounts the Thread-Index follow-up filter into every container that runs
+# Zammad's Rails code. Copy this file next to Zammad's docker-compose.yml and
+# the zammad-addon/ directory beside it (paths below are relative to this
+# file), then `docker compose up -d`: zammad-init runs db:migrate on start,
+# which registers the filters once.
+#
+# Once the filters are registered, every Rails container must have the filter
+# file. A container that processes mail without it fails to load the filter
+# and stops processing mail, so keep these mounts on all four services.
+x-follow-up-thread-index: &follow-up-thread-index
+  volumes:
+    - ./zammad-addon/app/models/channel/filter/follow_up_thread_index.rb:/opt/zammad/app/models/channel/filter/follow_up_thread_index.rb:ro
+    - ./zammad-addon/db/migrate/20261008000001_follow_up_thread_index_filters.rb:/opt/zammad/db/migrate/20261008000001_follow_up_thread_index_filters.rb:ro
+    - ./zammad-addon/script/follow_up_thread_index_backfill.rb:/opt/zammad/script/follow_up_thread_index_backfill.rb:ro
+
+services:
+  zammad-init:
+    <<: *follow-up-thread-index
+  zammad-railsserver:
+    <<: *follow-up-thread-index
+  zammad-scheduler:
+    <<: *follow-up-thread-index
+  zammad-websocket:
+    <<: *follow-up-thread-index
